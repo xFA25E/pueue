@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021  Valeriy Litkovskyy
 
-;; Author: Valeriy Litkovskyy <valeriy.litkovskyy@mail.polimi.it>
+;; Author: Valeriy Litkovskyy <>
 ;; Keywords: processes
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 ;; pueue edit should be asyncronous and update list in callback
 ;; set process filter for follow
 ;; make transient interfaces
+;; add hints
 
 ;;; Code:
 
