@@ -2,8 +2,11 @@
 
 ;; Copyright (C) 2021  Valeriy Litkovskyy
 
-;; Author: Valeriy Litkovskyy <>
+;; Author: Valeriy Litkovskyy
 ;; Keywords: processes
+;; Version: 0.1.0
+;; URL: https://github.com/xFA25E/emacs-pueue
+;; Package-Requires: ((emacs "27.1") (bui "1.2.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
