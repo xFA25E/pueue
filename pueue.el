@@ -5,7 +5,7 @@
 ;; Author: Valeriy Litkovskyy
 ;; Keywords: processes
 ;; Version: 0.1.0
-;; URL: https://github.com/xFA25E/emacs-pueue
+;; URL: https://github.com/xFA25E/pueue
 ;; Package-Requires: ((emacs "27.1") (bui "1.2.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -30,12 +30,14 @@
 ;; set process filter for follow
 ;; make transient interfaces
 ;; add hints
+;; tests, docs, custom etc, make lighter modifiebla, eldev, flymake
 
 ;;; Code:
 
 ;;;; REQUIRES
 
 (require 'bui)
+(require 'iso8601)
 
 ;;;; API
 
@@ -170,6 +172,7 @@
 
 ;;;; COMMANDS
 
+;;;###autoload
 (defun pueue ()
   (interactive)
   (bui-get-display-entries 'pueue 'list))
