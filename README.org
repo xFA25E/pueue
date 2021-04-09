@@ -3,7 +3,7 @@
 Emacs interface for [[https://github.com/Nukesor/pueue][pueue]] built using [[https://github.com/alezost/bui.el][bui]].  You can press ~h~ to see a hint with
 available commands.
 
-[[pueue.png]]
+[[pueue-list-with-hints.png]]
 
 * Available commands
   - ~pueue~ :: Show Pueue tasks
