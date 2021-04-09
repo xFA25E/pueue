@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021  Valeriy Litkovskyy
 
-;; Author: Valeriy Litkovskyy
+;; Author: Valeriy Litkovskyy <vlr.ltkvsk@protonmail.com>
 ;; Keywords: processes
 ;; Version: 0.1.0
 ;; URL: https://github.com/xFA25E/pueue
@@ -23,28 +23,38 @@
 
 ;;; Commentary:
 
-;; add commands
-;; add faces
-;; make pueue dependencies clickable
-;; pueue edit should be asyncronous and update list in callback
-;; set process filter for follow
-;; make transient interfaces
-;; add hints
-;; tests, docs, custom etc, make lighter modifiebla, eldev, flymake
+;; docs, eldev
 
 ;;; Code:
 
 ;;;; REQUIRES
 
 (require 'bui)
+(require 'seq)
 (require 'iso8601)
+
+;;;; FACES
+
+(defface pueue-list-result-success-face
+  '((t :inherit success))
+   "Face for result status."
+   :group 'pueue-list-faces)
+
+(defface pueue-list-result-failed-face
+  '((t :inherit error))
+   "Face for result status."
+   :group 'pueue-list-faces)
 
 ;;;; API
 
 (defun pueue-call (destination &rest args)
+  "Generic pueue proccess call function.
+`DESTINATION' and `ARGS' are like in `call-process'."
   (apply #'call-process "pueue" nil destination nil args))
 
 (defun pueue-call-ids (command task-ids &optional childrenp)
+  "Call pueue `COMMAND' on `TASK-IDS'.
+`CHILDRENP' adds --children flag to the command."
   (cl-assert task-ids)
   (apply #'pueue-call nil command
          (append (when childrenp (list "--children"))
@@ -52,6 +62,8 @@
   (bui-revert nil t))
 
 (defun pueue-status (&optional object-type)
+  "Get pueue json status.
+`OBJECT-TYPE' is like in `json-parse-buffer'."
   (let ((object-type (or object-type 'alist)))
     (with-temp-buffer
       (save-excursion
@@ -59,6 +71,7 @@
       (json-parse-buffer :object-type object-type))))
 
 (defun pueue-groups ()
+  "Get pueue groups."
   (cl-loop with groups = (gethash "groups" (pueue-status 'hash-table))
            for group being the hash-keys of groups
            collect group))
@@ -66,12 +79,18 @@
 ;;;; BUI
 
 (defun pueue-list-hint ()
+  "Return hint string for `PUEUE-LIST-MODE'."
   (bui-format-hints
-   ;; '(("\\[buffers-list-switch-to-buffer]") " switch to buffer;\n"
-   ;;   ("\\[buffers-list-kill-buffers]") " kill buffer(s);\n")
-   (bui-default-hint)))
+   (bui-default-hint)
+   '("\n"
+     ("\\[pueue-kill]") "kill " ("\\[pueue-pause]") "pause "
+     ("\\[pueue-start]") "start " ("\\[pueue-restart]") "restart "
+     ("\\[pueue-follow]") "follow " ("\\[pueue-clean]") "clean")))
 
 (defun pueue-get-entries (&rest task-ids)
+  "Return parsed pueue tasks.
+If `TASK-IDS' is supplied, return only tasks with supplied ids
+are returned."
   (let ((get-id (apply-partially #'alist-get 'id))
         (tasks (mapcar #'cdr (alist-get 'tasks (pueue-status)))))
     (if task-ids
@@ -79,9 +98,11 @@
       tasks)))
 
 (defun pueue-list-describe (&rest task-ids)
+  "Describe `TASK-IDS' in bui info."
   (bui-get-display-entries 'pueue 'info task-ids))
 
 (defun pueue-filter-by-group (entry group)
+  "Check if `ENTRY' task belongs to `GROUP'."
   (interactive (list '<> (completing-read "Group: " (pueue-groups))))
   (equal group (bui-assq-value entry 'group)))
 
@@ -90,15 +111,19 @@
 ;;;;;; LIST
 
 (defun pueue-list-id-sort-predicate (lhs rhs)
+  "Check if `LHS's car is less than `RHS's one."
   (< (car lhs) (car rhs)))
 
 (defun pueue-list-result-value-fn (result &optional _)
+  "Custom formatter for pueue's list `RESULT' field.
+Propertize success and failed status with their faces."
   (pcase-exhaustive result
-    ((pred stringp) result)
+    ((pred stringp) (propertize result 'face 'pueue-list-result-success-face))
     (:null "")
-    (`((,status . ,_)) (symbol-name status))))
+    (`((,status . ,_)) (propertize (symbol-name status) 'face 'pueue-list-result-failed-face))))
 
 (defun pueue-list-time-value-fn (time &optional _)
+  "Custom formatter for pueue's list `TIME' fileds."
   (pcase-exhaustive time
     (:null "")
     ((app iso8601-parse `(,_ ,m ,h . ,_)) (format "%02d:%02d" h m))))
@@ -106,6 +131,7 @@
 ;;;;;; INFO
 
 (defun pueue-info-result-insert-value (value)
+  "Custom formatter for pueue's info result `VALUE'."
   (bui-info-insert-value-simple
    (pcase-exhaustive value
      ((pred stringp) value)
@@ -113,6 +139,7 @@
      (`((,status . ,info)) (format "%s (%s)" status info)))))
 
 (defun pueue-info-time-insert-value (value)
+  "Custom formatter for pueue's info time `VALUE's."
   (bui-info-insert-value-simple
    (pcase-exhaustive value
      (:null "")
@@ -120,15 +147,27 @@
       (format "%d-%02d-%02d %02d:%02d:%02d" y mo d h m s)))))
 
 (defun pueue-info-group-insert-value (value)
+  "Custom formatter for pueue's info group `VALUE'."
   (bui-info-insert-value-simple
    (pcase-exhaustive value
      (:null "")
      ((pred stringp) value))))
 
 (defun pueue-info-envs-insert-value (value)
+  "Custom formatter for pueue's info envs `VALUE'."
   (bui-info-insert-value-simple
    (mapconcat (lambda (env) (concat (symbol-name (car env)) "=" (cdr env)))
               value "\n")))
+
+(defun pueue-info-dependencies-insert-value (value)
+  "Custom formatter for pueue's info dependencies `VALUE'.
+Add buttons to go to dependencies."
+  (seq-doseq (dep value)
+    (insert " ")
+    (bui-insert-action-button
+     (number-to-string dep)
+     (lambda (_) (pueue-list-describe dep))
+     (format "Go to %s" dep))))
 
 ;;;;; DEFINE
 
@@ -167,38 +206,57 @@
             (end simple (pueue-info-time-insert-value))
             (group simple (pueue-info-group-insert-value))
             (enqueue_at simple (pueue-info-time-insert-value))
-            (dependencies simple (simple))
+            (dependencies simple (pueue-info-dependencies-insert-value))
             (envs simple (pueue-info-envs-insert-value))))
 
 ;;;; COMMANDS
 
 ;;;###autoload
 (defun pueue ()
+  "Show pueue tasks."
   (interactive)
   (bui-get-display-entries 'pueue 'list))
 
 (defun pueue-clean ()
+  "Clean pueue tasks."
   (interactive)
   (pueue-call nil "clean")
   (bui-revert nil t))
 
 (defun pueue-kill (task-ids &optional childrenp)
+  "Kill pueue `TASK-IDS'.
+Send SIGTERM to children of tasks, if `CHILDRENP' is NON-NIL.
+Interactively, use marked entries or entry at point.  Use
+`CHILDRENP' with prefix arg."
   (interactive (list (bui-list-marked-or-current) current-prefix-arg))
   (pueue-call-ids "kill" task-ids childrenp))
 
 (defun pueue-pause (task-ids &optional childrenp)
+  "Pause pueue `TASK-IDS'.
+Send SIGSTOP to children of tasks, if `CHILDRENP' is NON-NIL.
+Interactively, use marked entries or entry at point.  Use
+`CHILDRENP' with prefix arg."
   (interactive (list (bui-list-marked-or-current) current-prefix-arg))
   (pueue-call-ids "pause" task-ids childrenp))
 
 (defun pueue-restart (task-ids)
+  "Restart pueue `TASK-IDS'.
+Interactively, use marked entries or entry at point."
   (interactive (list (bui-list-marked-or-current)))
   (pueue-call-ids "restart" task-ids))
 
 (defun pueue-start (task-ids &optional childrenp)
+  "Start or resume pueue `TASK-IDS'.
+Send SIGCONT to children of tasks, if `CHILDRENP' is NON-NIL.
+Interactively, use marked entries or entry at point.  Use
+`CHILDRENP' with prefix arg."
   (interactive (list (bui-list-marked-or-current) current-prefix-arg))
   (pueue-call-ids "start" task-ids childrenp))
 
 (defun pueue-follow (id &optional stderrp)
+  "Follow stdout of a task with `ID'.
+If `stderrp' is NON-NIL, follow stderr.  Interactively, use entry
+at point.  Use `STDERRP' with prefix arg."
   (interactive (list (bui-list-current-id) current-prefix-arg))
   (let ((buffer-name "*Pueue Follow*"))
     (when-let ((buffer (get-buffer "*Pueue Follow*")))
