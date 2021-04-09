@@ -23,7 +23,21 @@
 
 ;;; Commentary:
 
-;; docs, eldev
+;; Emacs interface for https://github.com/Nukesor/pueue built using
+;; https://github.com/alezost/bui.el.
+
+;; Available commands
+
+;; pueue - Show Pueue tasks
+;; pueue-clean (c) - Clean Pueue tasks
+;; pueue-kill (k) - Kill marked tasks or task at point
+;; pueue-pause (P) - Pause marked tasks or task at point
+;; pueue-restart (T) - Restart marked tasks or task at point
+;; pueue-start (t) - Start or resume marked tasks or task at point
+;; pueue-follow (F) - Follow stdout (or stderr) of a task
+;; (RET) - Show detailed information about a task
+;; (h) - Show hint with available commands (with bui commands)
+
 
 ;;; Code:
 
