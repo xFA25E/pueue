@@ -4,9 +4,9 @@
 
 ;; Author: Valeriy Litkovskyy <vlr.ltkvsk@protonmail.com>
 ;; Keywords: processes
-;; Version: 0.1.0
+;; Version: 1.0.0
 ;; URL: https://github.com/xFA25E/pueue
-;; Package-Requires: ((emacs "27.1") (bui "1.2.1"))
+;; Package-Requires: ((emacs "27.1") (transient "0.3.6"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -23,271 +23,171 @@
 
 ;;; Commentary:
 
-;; Emacs interface for https://github.com/Nukesor/pueue built using
-;; https://github.com/alezost/bui.el.
-
-;; Available commands
-
-;; pueue - Show Pueue tasks
-;; pueue-clean (c) - Clean Pueue tasks
-;; pueue-kill (k) - Kill marked tasks or task at point
-;; pueue-pause (P) - Pause marked tasks or task at point
-;; pueue-restart (T) - Restart marked tasks or task at point
-;; pueue-start (t) - Start or resume marked tasks or task at point
-;; pueue-follow (F) - Follow stdout (or stderr) of a task
-;; (RET) - Show detailed information about a task
-;; (h) - Show hint with available commands (with bui commands)
-
+;; Manage pueue tasks.
 
 ;;; Code:
 
 ;;;; REQUIRES
 
-(require 'bui)
-(require 'seq)
+(require 'pueue-command)
+(require 'pueue-info)
+
 (require 'iso8601)
+(require 'map)
+(require 'tabulated-list)
 
-;;;; FACES
+;;;; CUSTOMIZATION OPTIONS
 
-(defface pueue-list-result-success-face
+(defgroup pueue nil
+  "Manage pueue processes."
+  :group 'external
+  :group 'processes
+  :group 'applications)
+
+;;;;; VARIABLES
+
+(defcustom pueue-buffer-name
+  "*Pueue"
+  "Default buffer name for Pueue mode."
+  :type 'string
+  :group 'pueue)
+
+;;;;; FACES
+
+(defface pueue-result-success
   '((t :inherit success))
-   "Face for result status."
-   :group 'pueue-list-faces)
+  "Pueue mode face used for not failed result."
+  :group 'pueue)
 
-(defface pueue-list-result-failed-face
+(defface pueue-result-error
   '((t :inherit error))
-   "Face for result status."
-   :group 'pueue-list-faces)
+  "Pueue mode face used for failed result."
+  :group 'pueue)
 
-;;;; API
+;;;; LOCAL VARIABLES
 
-(defun pueue-call (destination &rest args)
-  "Generic pueue proccess call function.
-`DESTINATION' and `ARGS' are like in `call-process'."
-  (apply #'call-process "pueue" nil destination nil args))
+(defvar-local pueue--status nil
+  "Variable contaning parsed result of pueue status command.")
 
-(defun pueue-call-ids (command task-ids &optional childrenp)
-  "Call pueue `COMMAND' on `TASK-IDS'.
-`CHILDRENP' adds --children flag to the command."
-  (cl-assert task-ids)
-  (apply #'pueue-call nil command
-         (append (when childrenp (list "--children"))
-                 (mapcar #'number-to-string task-ids)))
-  (bui-revert nil t))
+(defvar-local pueue--marked-ids nil
+  "Marked ids in tabulated list mode.")
 
-(defun pueue-status (&optional object-type)
-  "Get pueue json status.
-`OBJECT-TYPE' is like in `json-parse-buffer'."
-  (let ((object-type (or object-type 'alist)))
-    (with-temp-buffer
-      (save-excursion
-        (pueue-call t "status" "--json"))
-      (json-parse-buffer :object-type object-type))))
+;;;; UTILS
 
-(defun pueue-groups ()
-  "Get pueue groups."
-  (cl-loop with groups = (gethash "groups" (pueue-status 'hash-table))
-           for group being the hash-keys of groups
-           collect group))
+(defun pueue--marked-ids ()
+  "Get a list with marked-ids or with item under point."
+  (or pueue--marked-ids (when-let ((id (tabulated-list-get-id))) (list id))))
 
-;;;; BUI
+(defun pueue--compare-ids (a b)
+  "Comparator for tabulated list entry ids.
+A and B are tabulated list entries that have ids in car
+positions."
+  (< (car a) (car b)))
 
-(defun pueue-list-hint ()
-  "Return hint string for `PUEUE-LIST-MODE'."
-  (bui-format-hints
-   (bui-default-hint)
-   '("\n"
-     ("\\[pueue-kill]") "kill " ("\\[pueue-pause]") "pause "
-     ("\\[pueue-start]") "start " ("\\[pueue-restart]") "restart "
-     ("\\[pueue-follow]") "follow " ("\\[pueue-clean]") "clean")))
+(defun pueue--status ()
+  "Get parsed pueue states."
+  (with-temp-buffer
+    (save-excursion
+      (call-process "pueue" nil t nil "status" "--json"))
+    (json-parse-buffer :null-object nil :false-object nil)))
 
-(defun pueue-get-entries (&rest task-ids)
-  "Return parsed pueue tasks.
-If `TASK-IDS' is supplied, return only tasks with supplied ids
-are returned."
-  (let ((get-id (apply-partially #'alist-get 'id))
-        (tasks (mapcar #'cdr (alist-get 'tasks (pueue-status)))))
-    (if task-ids
-        (mapcar (lambda (id) (cl-find id tasks :key get-id :test #'=)) task-ids)
-      tasks)))
+;;;; FORMATTERS
 
-(defun pueue-list-describe (&rest task-ids)
-  "Describe `TASK-IDS' in bui info."
-  (bui-get-display-entries 'pueue 'info task-ids))
+(defun pueue--extract-hm (time)
+  "Extract hours and minutes from iso8601 TIME string.
+TIME can be nil."
+  (pcase time
+    ((and (pred stringp) (app iso8601-parse (seq _ M H)))
+     (format "%02d:%02d" H M))
+    (_ "")))
 
-(defun pueue-filter-by-group (entry group)
-  "Check if `ENTRY' task belongs to `GROUP'."
-  (interactive (list '<> (completing-read "Group: " (pueue-groups))))
-  (equal group (bui-assq-value entry 'group)))
+(defun pueue--format-result (result)
+  "Format RESULT of pueue task.
+RESULT can be a string or a hash-table {string: number} or nil.
+Propertize resulting string with result faces."
+  (pcase result
+    ((pred stringp) (list result 'face 'pueue-result-success))
+    ((and (pred mapp) (app map-keys keys))
+     (list (string-join keys " ") 'face 'pueue-result-error))
+    (_ "")))
 
-;;;;; FORMATTERS
+;;;; PRINTERS
 
-;;;;;; LIST
+(defun pueue--refresh ()
+  "Refresh pueue status."
+  (setq pueue--status (pueue--status)
+        pueue--marked-ids nil
+        tabulated-list-entries
+        (map-apply
+         (pcase-lambda (id (map ("id" task-id) ("status" status) ("result" result)
+                                ("start" start) ("end" end) ("command" command)))
+           (list task-id (vector id status (pueue--format-result result)
+                                 (pueue--extract-hm start) (pueue--extract-hm end)
+                                 command)))
+         (map-elt pueue--status "tasks"))))
 
-(defun pueue-list-id-sort-predicate (lhs rhs)
-  "Check if `LHS's car is less than `RHS's one."
-  (< (car lhs) (car rhs)))
-
-(defun pueue-list-result-value-fn (result &optional _)
-  "Custom formatter for pueue's list `RESULT' field.
-Propertize success and failed status with their faces."
-  (pcase-exhaustive result
-    ((pred stringp) (propertize result 'face 'pueue-list-result-success-face))
-    (:null "")
-    (`((,status . ,_)) (propertize (symbol-name status) 'face 'pueue-list-result-failed-face))))
-
-(defun pueue-list-time-value-fn (time &optional _)
-  "Custom formatter for pueue's list `TIME' fileds."
-  (pcase-exhaustive time
-    (:null "")
-    ((app iso8601-parse `(,_ ,m ,h . ,_)) (format "%02d:%02d" h m))))
-
-;;;;;; INFO
-
-(defun pueue-info-result-insert-value (value)
-  "Custom formatter for pueue's info result `VALUE'."
-  (bui-info-insert-value-simple
-   (pcase-exhaustive value
-     ((pred stringp) value)
-     (:null "")
-     (`((,status . ,info)) (format "%s (%s)" status info)))))
-
-(defun pueue-info-time-insert-value (value)
-  "Custom formatter for pueue's info time `VALUE's."
-  (bui-info-insert-value-simple
-   (pcase-exhaustive value
-     (:null "")
-     ((app iso8601-parse `(,s ,m ,h ,d ,mo ,y . ,_))
-      (format "%d-%02d-%02d %02d:%02d:%02d" y mo d h m s)))))
-
-(defun pueue-info-group-insert-value (value)
-  "Custom formatter for pueue's info group `VALUE'."
-  (bui-info-insert-value-simple
-   (pcase-exhaustive value
-     (:null "")
-     ((pred stringp) value))))
-
-(defun pueue-info-envs-insert-value (value)
-  "Custom formatter for pueue's info envs `VALUE'."
-  (bui-info-insert-value-simple
-   (mapconcat (lambda (env) (concat (symbol-name (car env)) "=" (cdr env)))
-              value "\n")))
-
-(defun pueue-info-dependencies-insert-value (value)
-  "Custom formatter for pueue's info dependencies `VALUE'.
-Add buttons to go to dependencies."
-  (seq-doseq (dep value)
-    (insert " ")
-    (bui-insert-action-button
-     (number-to-string dep)
-     (lambda (_) (pueue-list-describe dep))
-     (format "Go to %s" dep))))
-
-;;;;; DEFINE
-
-(bui-define-groups pueue
-  :parent-group tools
-  :parent-faces-group faces
-  :group-doc "Settings for '\\[pueue]' command."
-  :faces-group-doc "Faces for '\\[pueue]' command.")
-
-(bui-define-entry-type pueue
-  :titles '((prev_status . "Previous status")
-            (enqueue_at . "Enqueue at"))
-  :get-entries-function #'pueue-get-entries
-  :filter-predicates (append bui-filter-predicates '(pueue-filter-by-group)))
-
-(bui-define-interface pueue list
-  :buffer-name "*Pueue*"
-  :describe-function #'pueue-list-describe
-  :format '((id nil 5 pueue-list-id-sort-predicate)
-            (status nil 9 t)
-            (result pueue-list-result-value-fn 8 t)
-            (start pueue-list-time-value-fn 8 t)
-            (end pueue-list-time-value-fn 6 t)
-            (command nil 0 t))
-  :hint 'pueue-list-hint
-  :sort-key '(id . t))
-
-(bui-define-interface pueue info
-  :format '((id simple (simple))
-            (command simple (simple))
-            (path simple (simple))
-            (status simple (simple))
-            (prev_status simple (simple))
-            (result simple (pueue-info-result-insert-value))
-            (start simple (pueue-info-time-insert-value))
-            (end simple (pueue-info-time-insert-value))
-            (group simple (pueue-info-group-insert-value))
-            (enqueue_at simple (pueue-info-time-insert-value))
-            (dependencies simple (pueue-info-dependencies-insert-value))
-            (envs simple (pueue-info-envs-insert-value))))
+(defun pueue--print-entry (id cols)
+  "Function used in `tabulated-list-printer'.
+See it's documentation for ID and COLS."
+  (tabulated-list-print-entry id cols)
+  (when (memq id pueue--marked-ids)
+    (save-excursion
+      (forward-line -1)
+      (tabulated-list-put-tag "*"))))
 
 ;;;; COMMANDS
 
-;;;###autoload
+(define-derived-mode pueue-mode tabulated-list-mode "Pueue"
+  "Pueue mode used to manage pueueu tasks."
+  :group 'pueue
+  (setq tabulated-list-padding 2
+        tabulated-list-sort-key (cons "ID" t)
+        tabulated-list-printer 'pueue--print-entry
+        tabulated-list-format [("ID" 5 pueue--compare-ids)
+                               ("Status" 9 t)
+                               ("Result" 8 t)
+                               ("Start" 6 t)
+                               ("End" 6 t)
+                               ("Command" 0 t)])
+  (add-hook 'tabulated-list-revert-hook 'pueue--refresh nil t)
+  (tabulated-list-init-header))
+
 (defun pueue ()
-  "Show pueue tasks."
+  "Main entry command for pueue task manager."
   (interactive)
-  (bui-get-display-entries 'pueue 'list))
+  (let ((buffer (get-buffer-create "*Pueue*")))
+    (with-current-buffer buffer
+      (pueue-mode)
+      (pueue--refresh)
+      (tabulated-list-print))
+    (pop-to-buffer buffer '((display-buffer-reuse-window
+                             display-buffer-same-window)))))
 
-(defun pueue-clean ()
-  "Clean pueue tasks."
+(defun pueue-mark ()
+  "Mark pueue task at point."
   (interactive)
-  (pueue-call nil "clean")
-  (bui-revert nil t))
+  (cl-pushnew (tabulated-list-get-id) pueue--marked-ids)
+  (tabulated-list-put-tag "*" t)
+  (set-buffer-modified-p nil))
 
-(defun pueue-kill (task-ids &optional childrenp)
-  "Kill pueue `TASK-IDS'.
-Send SIGTERM to children of tasks, if `CHILDRENP' is NON-NIL.
-Interactively, use marked entries or entry at point.  Use
-`CHILDRENP' with prefix arg."
-  (interactive (list (bui-list-marked-or-current) current-prefix-arg))
-  (pueue-call-ids "kill" task-ids childrenp))
-
-(defun pueue-pause (task-ids &optional childrenp)
-  "Pause pueue `TASK-IDS'.
-Send SIGSTOP to children of tasks, if `CHILDRENP' is NON-NIL.
-Interactively, use marked entries or entry at point.  Use
-`CHILDRENP' with prefix arg."
-  (interactive (list (bui-list-marked-or-current) current-prefix-arg))
-  (pueue-call-ids "pause" task-ids childrenp))
-
-(defun pueue-restart (task-ids)
-  "Restart pueue `TASK-IDS'.
-Interactively, use marked entries or entry at point."
-  (interactive (list (bui-list-marked-or-current)))
-  (pueue-call-ids "restart" task-ids))
-
-(defun pueue-start (task-ids &optional childrenp)
-  "Start or resume pueue `TASK-IDS'.
-Send SIGCONT to children of tasks, if `CHILDRENP' is NON-NIL.
-Interactively, use marked entries or entry at point.  Use
-`CHILDRENP' with prefix arg."
-  (interactive (list (bui-list-marked-or-current) current-prefix-arg))
-  (pueue-call-ids "start" task-ids childrenp))
-
-(defun pueue-follow (id &optional stderrp)
-  "Follow stdout of a task with `ID'.
-If `stderrp' is NON-NIL, follow stderr.  Interactively, use entry
-at point.  Use `STDERRP' with prefix arg."
-  (interactive (list (bui-list-current-id) current-prefix-arg))
-  (let ((buffer-name "*Pueue Follow*"))
-    (when-let ((buffer (get-buffer "*Pueue Follow*")))
-      (kill-buffer buffer))
-
-    (async-shell-command
-     (concat "pueue follow " (when stderrp "--err ") (number-to-string id))
-     buffer-name)))
+(defun pueue-unmark ()
+  "Unmark pueue taks at point."
+  (interactive)
+  (cl-callf2 delete (tabulated-list-get-id) pueue--marked-ids)
+  (tabulated-list-put-tag " " t)
+  (set-buffer-modified-p nil))
 
 ;;;; BINDINGS
 
-(define-key pueue-list-mode-map (kbd "F") #'pueue-follow)
-(define-key pueue-list-mode-map (kbd "c") #'pueue-clean)
-(define-key pueue-list-mode-map (kbd "k") #'pueue-kill)
-(define-key pueue-list-mode-map (kbd "P") #'pueue-pause)
-(define-key pueue-list-mode-map (kbd "t") #'pueue-start)
-(define-key pueue-list-mode-map (kbd "T") #'pueue-restart)
+(define-key pueue-mode-map "m" #'pueue-mark)
+(define-key pueue-mode-map "u" #'pueue-unmark)
+(define-key pueue-mode-map "\C-m" #'pueue-info)
+(define-key pueue-mode-map "c" #'pueue-command-clean)
+(define-key pueue-mode-map "f" #'pueue-command-follow)
+(define-key pueue-mode-map "k" #'pueue-command-kill)
+(define-key pueue-mode-map "P" #'pueue-command-pause)
+(define-key pueue-mode-map "r" #'pueue-command-restart)
+(define-key pueue-mode-map "s" #'pueue-command-start)
 
 ;;;; PROVIDE
 
