@@ -1,17 +1,10 @@
 #+TITLE: Pueue
 
-Emacs interface for [[https://github.com/Nukesor/pueue][pueue]] built using [[https://github.com/alezost/bui.el][bui]].  You can press ~h~ to see a hint with
-available commands.
+Emacs interface for [[https://github.com/Nukesor/pueue][pueue]].
 
-[[pueue-list-with-hints.png]]
+[[pueue-tasks.png]]
 
-* Available commands
-  - ~pueue~ :: Show Pueue tasks
-  - ~pueue-clean~ (~c~) :: Clean Pueue tasks
-  - ~pueue-kill~ (~k~) :: Kill marked tasks or task at point
-  - ~pueue-pause~ (~P~) :: Pause marked tasks or task at point
-  - ~pueue-restart~ (~T~) :: Restart marked tasks or task at point
-  - ~pueue-start~ (~t~) :: Start or resume marked tasks or task at point
-  - ~pueue-follow~ (~F~) :: Follow stdout (or stderr) of a task
-  - (~RET~) :: Show detailed information about a task
-  - (~h~) :: Show hint with available commands (with /bui/ commands)
+[[pueue-info.png]]
+
+All pueue commands are implemented.  Describe *pueue-mode* and *pueue-info-mode*
+to see them.
