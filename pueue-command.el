@@ -199,7 +199,7 @@ are command line arguments."
   (let* ((ids (seq-map #'number-to-string task-ids))
          (command (append (list "pueue" "log") args ids))
          (buffer-name "*Pueue Log*"))
-    (shell-command (string-join command " ") buffer-name)))
+    (async-shell-command (string-join command " ") buffer-name)))
 
 (transient-define-prefix pueue-command-log ()
   "Run pueue log command."
