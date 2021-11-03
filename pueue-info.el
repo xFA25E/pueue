@@ -205,17 +205,17 @@ See `pueue-info--tasks' for more information on TASKS."
         (buffer (get-buffer pueue-info-buffer-name)))
     (unless buffer
       (with-current-buffer (setq buffer (get-buffer-create pueue-info-buffer-name))
-        (pueue-info-mode)
-        (setq pueue-info--ewoc (ewoc-create #'pueue-info--draw-task))))
+        (with-silent-modifications
+          (pueue-info-mode)
+          (setq pueue-info--ewoc (ewoc-create #'pueue-info--draw-task)))))
     (with-current-buffer buffer
-      (ewoc-filter pueue-info--ewoc #'ignore)
       (setq pueue-info--tasks tasks)
       (unless (eq prev-buffer buffer)
         (setq pueue-info--history nil))
-      (let ((inhibit-read-only t))
+      (with-silent-modifications
+        (ewoc-filter pueue-info--ewoc #'ignore)
         (seq-doseq (task-id task-ids)
-          (ewoc-enter-last pueue-info--ewoc (cons task-id nil))))
-      (set-buffer-modified-p nil))
+          (ewoc-enter-last pueue-info--ewoc (cons task-id nil)))))
     (pop-to-buffer buffer '((display-buffer-reuse-window
                              display-buffer-same-window)))))
 
@@ -235,16 +235,16 @@ See `pueue-info--tasks' for more information on TASKS."
   (when-let ((node (ewoc-locate pueue-info--ewoc)))
     (let ((data (ewoc-data node)))
       (setcdr data (not (cdr data)))
-      (ewoc-invalidate pueue-info--ewoc node)
-      (set-buffer-modified-p nil))))
+      (with-silent-modifications
+        (ewoc-invalidate pueue-info--ewoc node)))))
 
 (defun pueue-info-backward-history ()
   "Go back in history."
   (interactive)
   (when-let ((item (pop pueue-info--history)))
-    (ewoc-filter pueue-info--ewoc #'ignore)
-    (mapc (apply-partially #'ewoc-enter-last pueue-info--ewoc) (car item))
-    (set-buffer-modified-p nil)
+    (with-silent-modifications
+      (ewoc-filter pueue-info--ewoc #'ignore)
+      (mapc (apply-partially #'ewoc-enter-last pueue-info--ewoc) (car item)))
     (goto-char (cdr item))))
 
 ;;;; BINDINGS

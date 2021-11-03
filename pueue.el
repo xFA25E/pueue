@@ -168,15 +168,15 @@ See it's documentation for ID and COLS."
   "Mark pueue task at point."
   (interactive)
   (cl-pushnew (tabulated-list-get-id) pueue--marked-ids)
-  (tabulated-list-put-tag "*" t)
-  (set-buffer-modified-p nil))
+  (with-silent-modifications
+    (tabulated-list-put-tag "*" t)))
 
 (defun pueue-unmark ()
   "Unmark pueue taks at point."
   (interactive)
   (cl-callf2 delete (tabulated-list-get-id) pueue--marked-ids)
-  (tabulated-list-put-tag " " t)
-  (set-buffer-modified-p nil))
+  (with-silent-modifications
+    (tabulated-list-put-tag " " t)))
 
 ;;;; BINDINGS
 
