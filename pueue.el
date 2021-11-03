@@ -152,6 +152,7 @@ See it's documentation for ID and COLS."
   (add-hook 'tabulated-list-revert-hook 'pueue--refresh nil t)
   (tabulated-list-init-header))
 
+;;;###autoload
 (defun pueue ()
   "Main entry command for pueue task manager."
   (interactive)
@@ -181,13 +182,26 @@ See it's documentation for ID and COLS."
 
 (define-key pueue-mode-map "m" #'pueue-mark)
 (define-key pueue-mode-map "u" #'pueue-unmark)
-(define-key pueue-mode-map "\C-m" #'pueue-info)
+
+(define-key pueue-mode-map "a" #'pueue-command-add)
 (define-key pueue-mode-map "c" #'pueue-command-clean)
+(define-key pueue-mode-map "e" #'pueue-command-edit)
+(define-key pueue-mode-map "Q" #'pueue-command-enqueue)
 (define-key pueue-mode-map "f" #'pueue-command-follow)
+(define-key pueue-mode-map "G" #'pueue-command-group)
 (define-key pueue-mode-map "k" #'pueue-command-kill)
+(define-key pueue-mode-map "l" #'pueue-command-log)
+(define-key pueue-mode-map "L" #'pueue-command-parallel)
 (define-key pueue-mode-map "P" #'pueue-command-pause)
+(define-key pueue-mode-map "R" #'pueue-command-remove)
+(define-key pueue-mode-map "t" #'pueue-command-reset)
 (define-key pueue-mode-map "r" #'pueue-command-restart)
+(define-key pueue-mode-map "d" #'pueue-command-send)
 (define-key pueue-mode-map "s" #'pueue-command-start)
+(define-key pueue-mode-map "H" #'pueue-command-stash)
+(define-key pueue-mode-map "w" #'pueue-command-switch)
+
+(define-key pueue-mode-map "\C-m" #'pueue-info)
 
 ;;;; PROVIDE
 
