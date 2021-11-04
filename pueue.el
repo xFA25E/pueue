@@ -4,7 +4,7 @@
 
 ;; Author: Valeriy Litkovskyy <vlr.ltkvsk@protonmail.com>
 ;; Keywords: processes
-;; Version: 1.0.1
+;; Version: 1.0.2
 ;; URL: https://github.com/xFA25E/pueue
 ;; Package-Requires: ((emacs "27.1") (transient "0.3.6"))
 
@@ -77,6 +77,20 @@
 (defun pueue--marked-ids ()
   "Get a list with marked-ids or with item under point."
   (or pueue--marked-ids (when-let ((id (tabulated-list-get-id))) (list id))))
+
+(defun pueue--marked-ids-add (id)
+  "Add ID to variable `pueue--marked-ids'."
+  (cl-pushnew id pueue--marked-ids))
+
+(defun pueue--marked-ids-remove (id)
+  "Remove ID from variable `pueue--marked-ids'."
+  (cl-callf2 delete id pueue--marked-ids))
+
+(defun pueue--marking-action (fn tag)
+  "Apply FN to task id at point and add TAG."
+  (funcall fn (tabulated-list-get-id))
+  (with-silent-modifications
+    (tabulated-list-put-tag tag t)))
 
 (defun pueue--compare-ids (a b)
   "Comparator for tabulated list entry ids.
@@ -167,16 +181,12 @@ See it's documentation for ID and COLS."
 (defun pueue-mark ()
   "Mark pueue task at point."
   (interactive)
-  (cl-pushnew (tabulated-list-get-id) pueue--marked-ids)
-  (with-silent-modifications
-    (tabulated-list-put-tag "*" t)))
+  (pueue--marking-action #'pueue--marked-ids-add "*"))
 
 (defun pueue-unmark ()
   "Unmark pueue taks at point."
   (interactive)
-  (cl-callf2 delete (tabulated-list-get-id) pueue--marked-ids)
-  (with-silent-modifications
-    (tabulated-list-put-tag " " t)))
+  (pueue--marking-action #'pueue--marked-ids-remove " "))
 
 ;;;; BINDINGS
 
