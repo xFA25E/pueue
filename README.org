@@ -2,9 +2,11 @@
 
 Emacs interface for [[https://github.com/Nukesor/pueue][pueue]].
 
-[[pueue-tasks.png]]
+[[scrots/pueue-tasks.png]]
 
-[[pueue-info.png]]
+[[scrots/pueue-help.png]]
 
-All pueue commands are implemented.  Describe *pueue-mode* and *pueue-info-mode*
-to see them.
+[[scrots/pueue-info.png]]
+
+All pueue commands are implemented.  Press ~?~ (/question mark/) or describe
+*pueue-mode* and *pueue-info-mode* to see them.

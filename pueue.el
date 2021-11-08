@@ -4,7 +4,7 @@
 
 ;; Author: Valeriy Litkovskyy <vlr.ltkvsk@protonmail.com>
 ;; Keywords: processes
-;; Version: 1.0.2
+;; Version: 1.0.3
 ;; URL: https://github.com/xFA25E/pueue
 ;; Package-Requires: ((emacs "27.1") (transient "0.3.6"))
 
@@ -210,6 +210,7 @@ See it's documentation for ID and COLS."
 (define-key pueue-mode-map "s" #'pueue-command-start)
 (define-key pueue-mode-map "H" #'pueue-command-stash)
 (define-key pueue-mode-map "w" #'pueue-command-switch)
+(define-key pueue-mode-map "?" #'pueue-command-help)
 
 (define-key pueue-mode-map "\C-m" #'pueue-info)
 

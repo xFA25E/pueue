@@ -359,6 +359,33 @@ TASK-ID-1 and TASK-ID-2 are numeric ids of tasks."
     (pueue-command--call "switch" ids))
   (revert-buffer nil t))
 
+;;;;; HELP
+
+(transient-define-prefix pueue-command-help ()
+  "Show all pueue commmands."
+  [["Task actions"
+    ("e" "Edit" pueue-command-edit)
+    ("Q" "Enqueue" pueue-command-enqueue)
+    ("k" "Kill" pueue-command-kill)
+    ("P" "Pause" pueue-command-pause)]
+   [""
+    ("R" "Remove" pueue-command-remove)
+    ("r" "Restart" pueue-command-restart)
+    ("s" "Start" pueue-command-start)
+    ("H" "Stash" pueue-command-stash)]
+   ["Task info"
+    ("f" "Follow" pueue-command-follow)
+    ("l" "Log" pueue-command-log)
+    ("d" "Send" pueue-command-send)]
+   ["Queue actions"
+    ("a" "Add" pueue-command-add)
+    ("c" "Clean" pueue-command-clean)
+    ("w" "Switch" pueue-command-switch)]
+   [""
+    ("G" "Group" pueue-command-group)
+    ("L" "Parallel" pueue-command-parallel)
+    ("t" "Reset" pueue-command-reset)]])
+
 ;;;; PROVIDE
 
 (provide 'pueue-command)
