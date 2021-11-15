@@ -72,6 +72,10 @@
 (defvar-local pueue--marked-ids nil
   "Marked ids in tabulated list mode.")
 
+(defvar-local pueue--group-filter nil
+  "Display tasks only of this group.
+If NIL, shouw all tasks.")
+
 ;;;; UTILS
 
 (defun pueue--marked-ids ()
@@ -132,13 +136,17 @@ Propertize resulting string with result faces."
   (setq pueue--status (pueue--status)
         pueue--marked-ids nil
         tabulated-list-entries
-        (map-apply
-         (pcase-lambda (id (map ("id" task-id) ("status" status) ("result" result)
-                                ("start" start) ("end" end) ("command" command)))
-           (list task-id (vector id status (pueue--format-result result)
-                                 (pueue--extract-hm start) (pueue--extract-hm end)
-                                 command)))
-         (map-elt pueue--status "tasks"))))
+        (seq-filter
+         (pcase-lambda ((seq _ (seq _ _ _ _ _ group)))
+           (or (null pueue--group-filter) (string= pueue--group-filter group)))
+         (map-apply
+          (pcase-lambda (id (map ("id" task-id) ("status" status) ("result" result)
+                                 ("start" start) ("end" end) ("group" group)
+                                 ("label" label) ("command" command)))
+            (list task-id (vector id status (pueue--format-result result)
+                                  (pueue--extract-hm start) (pueue--extract-hm end)
+                                  group (or label "") command)))
+          (map-elt pueue--status "tasks")))))
 
 (defun pueue--print-entry (id cols)
   "Function used in `tabulated-list-printer'.
@@ -151,18 +159,21 @@ See it's documentation for ID and COLS."
 
 ;;;; COMMANDS
 
-(define-derived-mode pueue-mode tabulated-list-mode "Pueue"
+(define-derived-mode pueue-mode tabulated-list-mode
+  '("Pueue" (pueue--group-filter ("[" pueue--group-filter "]")))
   "Pueue mode used to manage pueueu tasks."
   :group 'pueue
   (setq tabulated-list-padding 2
         tabulated-list-sort-key (cons "ID" t)
         tabulated-list-printer 'pueue--print-entry
-        tabulated-list-format [("ID" 5 pueue--compare-ids)
-                               ("Status" 9 t)
-                               ("Result" 8 t)
-                               ("Start" 6 t)
-                               ("End" 6 t)
-                               ("Command" 0 t)])
+        tabulated-list-format (vector (list "ID" 5 'pueue--compare-ids)
+                                      (list "Status" 9 t)
+                                      (list "Result" 8 t)
+                                      (list "Start" 6 t)
+                                      (list "End" 6 t)
+                                      (list "Group" 8 t)
+                                      (list "Label" 6 t)
+                                      (list "Command" 0 t)))
   (add-hook 'tabulated-list-revert-hook 'pueue--refresh nil t)
   (tabulated-list-init-header))
 
@@ -188,10 +199,22 @@ See it's documentation for ID and COLS."
   (interactive)
   (pueue--marking-action #'pueue--marked-ids-remove " "))
 
+(defun pueue-filter-by-group ()
+  "Filter pueue tasks by group or remove current filter."
+  (interactive)
+  (if pueue--group-filter
+      (setq pueue--group-filter nil)
+    (let* ((_history nil)
+           (groups (map-keys (map-elt (pueue--status) "groups")))
+           (group (completing-read "Group: " groups nil t nil '_history)))
+      (setq pueue--group-filter group)))
+  (revert-buffer nil t))
+
 ;;;; BINDINGS
 
 (define-key pueue-mode-map "m" #'pueue-mark)
 (define-key pueue-mode-map "u" #'pueue-unmark)
+(define-key pueue-mode-map "F" #'pueue-filter-by-group)
 
 (define-key pueue-mode-map "a" #'pueue-command-add)
 (define-key pueue-mode-map "c" #'pueue-command-clean)
