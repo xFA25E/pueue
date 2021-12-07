@@ -4,7 +4,7 @@
 
 ;; Author: Valeriy Litkovskyy <vlr.ltkvsk@protonmail.com>
 ;; Keywords: processes
-;; Version: 1.0.3
+;; Version: 1.0.4
 ;; URL: https://github.com/xFA25E/pueue
 ;; Package-Requires: ((emacs "27.1") (transient "0.3.6"))
 
