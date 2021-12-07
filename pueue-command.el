@@ -23,10 +23,25 @@
 
 ;;;; REQUIRES
 
-(require 'seq)
+(require 'map)
 (require 'transient)
 
+(defvar crm-completion-table)
 (declare-function pueue--marked-ids "pueue")
+(declare-function pueue--status "pueue")
+
+;;;; VARIABLES
+
+(defvar pueue-command--delay-help (string-trim "
+2020-04-01T18:30:00   # RFC 3339 timestamp           | wednesday # The closest wednesday in the future
+2020-4-1 18:2:30      # Optional leading zeros       | 4 months  # 4 months from today at 00:00:00
+2020-4-1 5:30pm       # Informal am/pm time          | 1 week    # 1 week at the current time
+2020-4-1 5pm          # Optional minutes and seconds | 1days     # 1 day from today at the current time
+April 1 2020 18:30:00 # English months               | 1d 03:00  # The closest 3:00 after 1 day (24 hours)
+1 Apr 8:30pm          # Implies current year         | 3h        # 3 hours from now
+4/1                   # American form date           | 3600s     # 3600 seconds from now
+wednesday 10:30pm     # The closest wednesday in the future at 22:30
+") "Delay minibuffer help.")
 
 ;;;; COMMANDS
 
@@ -36,6 +51,33 @@ Show success or error message."
   (with-temp-buffer
     (apply #'call-process "pueue" nil t nil command args)
     (message "%s" (string-trim-right (buffer-string)))))
+
+(defun pueue-command--completing-read-group (prompt initial-input history)
+  "Completing read pueue group.
+PROMPT, INITIAL-INPUT and HISTORY are the same as in
+`completing-read'."
+  (let ((groups (map-keys (map-elt (pueue--status) "groups"))))
+    (completing-read prompt groups nil t initial-input history)))
+
+(defun pueue-command--completing-read-multiple-pueue-tasks (prompt initial-input history)
+  "Completing read multiple pueue tasks.
+PROMPT, INITIAL-INPUT and HISTORY are the same as in
+`completing-read-multiple'."
+  (let* ((tasks (map-elt (pueue--status) "tasks"))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (id)
+                  (when-let ((task (map-elt crm-completion-table id)))
+                    (concat "  -- " (map-elt task "command"))))))
+         (ids (completing-read-multiple prompt tasks nil t initial-input history)))
+    (string-join ids ",")))
+
+(defun pueue-command--completing-read-delay (prompt initial-input history)
+  "Completing read delay argument.
+It adds minibuffer help.  PROMPT, INITIAL-INPUT and HISTORY are
+the same as in `completing-read'."
+  (let ((minibuffer-help-form pueue-command--delay-help))
+    (read-from-minibuffer prompt initial-input nil nil history)))
 
 ;;;;; ADD
 
@@ -63,9 +105,9 @@ line arguments."
    ("-i" "Immediately start the task" "--immediate")
    ("-s" "Create the task in Stashed state" "--stashed")]
   ["Options"
-   ("-a" "Start the task after other tasks (N1,N2,N3..)" "--after=")
-   ("-d" "Prevents the task from being enqueued until <delay> elapses" "--delay=")
-   ("-g" "Assign the task to a group" "--group=")
+   ("-a" "Start the task after other tasks" "--after=" pueue-command--completing-read-multiple-pueue-tasks)
+   ("-d" "Prevents the task from being enqueued until <delay> elapses" "--delay=" pueue-command--completing-read-delay)
+   ("-g" "Assign the task to a group" "--group=" pueue-command--completing-read-group)
    ("-l" "Add some information for yourself" "--label=")]
   ["Actions"
    ("a" "Add" pueue-command-add--transient)])
@@ -121,7 +163,7 @@ are command line arguments."
 (transient-define-prefix pueue-command-enqueue ()
   "Run pueue enqueue command."
   ["Options"
-   ("-d" "Delay enqueuing these tasks until <delay> elapses" "--delay=")]
+   ("-d" "Delay enqueuing these tasks until <delay> elapses" "--delay=" pueue-command--completing-read-delay)]
   ["Actions"
    ("Q" "Enqueue" pueue-command-enqueue--transient)])
 
@@ -164,7 +206,7 @@ Run pueue group command.  ARGS are command line arguments."
   "Run pueue group command."
   ["Options"
    ("-a" "Add a group by name" "--add=")
-   ("-r" "Remove a group by name" "--remove=")]
+   ("-r" "Remove a group by name" "--remove=" pueue-command--completing-read-group)]
   ["Actions"
    ("G" "Group" pueue-command-group--transient)])
 
@@ -185,7 +227,8 @@ are command line arguments."
    ("-a" "Kill all running tasks across ALL groups. This also pauses all groups" "--all")
    ("-c" "Send the SIGTERM signal to all children as well" "--children")]
   ["Options"
-   ("-g" "Kill all running tasks in a group. This also pauses the group" "--group=")]
+   ("-g" "Kill all running tasks in a group. This also pauses the group" "--group="
+    pueue-command--completing-read-group)]
   ["Actions"
    ("k" "Kill" pueue-command-kill--transient)])
 
@@ -225,7 +268,8 @@ are command line arguments."
 (transient-define-prefix pueue-command-parallel ()
   "Run pueue parallel command."
   ["Options"
-   ("-g" "Set the amount for the specific group" "--group=")]
+   ("-g" "Set the amount for the specific group" "--group="
+    pueue-command--completing-read-group)]
   ["Actions"
    ("L" "Parallel" pueue-command-parallel--transient)])
 
@@ -246,7 +290,8 @@ ARGS are command line arguments."
    ("-a" "Pause all groups!" "--all")
    ("-c" "Also pause direct child processes of a task's main proces." "--children")]
   ["Options"
-   ("-g" "Pause a specific group" "--group=")]
+   ("-g" "Pause a specific group" "--group="
+    pueue-command--completing-read-group)]
   ["Actions"
    ("P" "Pause" pueue-command-pause--transient)])
 
@@ -331,7 +376,8 @@ ARGS are command line arguments."
    ("-a" "Resume all groups" "--all")
    ("-c" "Also resume direct child processes of your paused tasks" "--children")]
   ["Options"
-   ("-g" "Resume a specific group and all paused tasks in it" "--group=")]
+   ("-g" "Resume a specific group and all paused tasks in it" "--group="
+    pueue-command--completing-read-group)]
   ["Actions"
    ("s" "Start" pueue-command-start--transient)])
 
