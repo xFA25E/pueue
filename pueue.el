@@ -54,12 +54,12 @@
 
 ;;;;; FACES
 
-(defface pueue-result-success
+(defface pueue-status-success
   '((t :inherit success))
   "Pueue mode face used for not failed result."
   :group 'pueue)
 
-(defface pueue-result-error
+(defface pueue-status-error
   '((t :inherit error))
   "Pueue mode face used for failed result."
   :group 'pueue)
@@ -119,14 +119,17 @@ TIME can be nil."
      (format "%02d:%02d" H M))
     (_ "")))
 
-(defun pueue--format-result (result)
-  "Format RESULT of pueue task.
-RESULT can be a string or a hash-table {string: number} or nil.
-Propertize resulting string with result faces."
-  (pcase result
-    ((pred stringp) (list result 'face 'pueue-result-success))
-    ((and (pred mapp) (app map-keys keys))
-     (list (string-join keys " ") 'face 'pueue-result-error))
+(defun pueue--format-status (status)
+  "Format STATUS of pueue task.
+STATUS can be a string or a hash-table.  Propertize resulting
+string with status faces."
+  (pcase status
+    ((pred stringp) status)
+    ((pred mapp)
+     (pcase (seq-first (map-pairs status))
+       (`("Done" . "Success") (list "Done" 'face 'pueue-status-success))
+       (`("Done" . ,_) (list "Done" 'face 'pueue-status-error))
+       (`(,status . ,_) status)))
     (_ "")))
 
 ;;;; PRINTERS
@@ -140,10 +143,10 @@ Propertize resulting string with result faces."
          (pcase-lambda ((seq _ (seq _ _ _ _ _ group)))
            (or (null pueue--group-filter) (string= pueue--group-filter group)))
          (map-apply
-          (pcase-lambda (id (map ("id" task-id) ("status" status) ("result" result)
-                                 ("start" start) ("end" end) ("group" group)
-                                 ("label" label) ("command" command)))
-            (list task-id (vector id status (pueue--format-result result)
+          (pcase-lambda (id (map ("id" task-id) ("status" status)
+                                 ("start" start) ("end" end)
+                                 ("group" group) ("label" label) ("command" command)))
+            (list task-id (vector id (pueue--format-status status)
                                   (pueue--extract-hm start) (pueue--extract-hm end)
                                   group (or label "") command)))
           (map-elt pueue--status "tasks")))))
@@ -195,7 +198,6 @@ See it's documentation for ID and COLS."
         tabulated-list-printer 'pueue--print-entry
         tabulated-list-format (vector (list "ID" 5 'pueue--compare-ids)
                                       (list "Status" 9 t)
-                                      (list "Result" 8 t)
                                       (list "Start" 6 t)
                                       (list "End" 6 t)
                                       (list "Group" 8 t)

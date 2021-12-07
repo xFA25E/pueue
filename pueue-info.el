@@ -68,8 +68,7 @@ and values have the following types:
  \"command\"          -> string
  \"label\"            -> string or nil
  \"path\"             -> string
- \"status\"           -> string
- \"result\"           -> string or hash-table {string: number} or nil
+ \"status\"           -> string or hash-table
  \"start\"            -> iso8601 time string
  \"end\"              -> iso8601 time string
  \"group\"            -> string
@@ -103,22 +102,40 @@ DRAW-ENVS-P.")
 STRING can be a string or nil."
   (when string (insert " " string)))
 
-(defun pueue-info--draw-result (result &optional _)
-  "Draw pueue task RESULT.
-RESULT can be a string or a hash-table {string: number} or
-nil."
-  (cond ((stringp result) (insert " " result))
-        ((mapp result)
-         (map-do (pcase-lambda (result (app number-to-string code))
-                   (insert " " result "(" code ")"))
-                 result))))
-
 (defun pueue-info--draw-time (time &optional _)
   "Draw iso8601 time string.
 TIME can be a string or nil."
   (when time
     (seq-let (S M H d m y) (iso8601-parse time)
       (insert (format " %d-%02d-%02d %02d:%02d:%02d" y m d H M S)))))
+
+(defun pueue-info--draw-result (result &optional _)
+  "Draw pueue task RESULT.
+RESULT can be a string or a hash-table."
+  (pcase result
+    ((pred stringp) (pueue-info--draw-string result))
+    ((pred mapp)
+     (pcase (seq-first (map-pairs result))
+       (`("Failed" . ,code)
+        (insert " Failed")
+        (pueue-info--draw-number code))
+       (`("FailedToSpawn" . ,reason)
+        (insert " FailedToSpawn")
+        (pueue-info--draw-string reason))))))
+
+(defun pueue-info--draw-status (status &optional _)
+  "Draw pueue task STATUS.
+STATUS can be a string or a hash-table."
+  (pcase status
+    ((pred stringp) (pueue-info--draw-string status))
+    ((pred mapp)
+     (pcase (seq-first (map-pairs status))
+       (`("Done" . ,result)
+        (insert " Done")
+        (pueue-info--draw-result result))
+       (`("Stashed" . ,(map ("enqueue_at" enqueue-at)))
+        (insert " Stashed")
+        (pueue-info--draw-time enqueue-at))))))
 
 (defun pueue-info--push-dependency-button (pos)
   "Push button on task dependency at position POS.
@@ -170,14 +187,13 @@ See `pueue-info--draw-envs' for more information on DRAW-ENVS-P."
       ["command" "Command" pueue-info--draw-string]
       ["label" "Label" pueue-info--draw-string]
       ["path" "Path" pueue-info--draw-string]
-      ["status" "Status" pueue-info--draw-string]
-      ["result" "Result" pueue-info--draw-result]
+      ["status" "Status" pueue-info--draw-status]
       ["start" "Start" pueue-info--draw-time]
       ["end" "End" pueue-info--draw-time]
       ["group" "Group" pueue-info--draw-string]
       ["enqueue_at" "Enqueue at" pueue-info--draw-time]
       ["dependencies" "Dependencies" pueue-info--draw-dependencies]
-      ["prev_status" "Previous status" pueue-info--draw-string]
+      ["prev_status" "Previous status" pueue-info--draw-status]
       ["original_command" "Original command" pueue-info--draw-string]
       ["envs" "Environment variables" pueue-info--draw-envs]])))
 
