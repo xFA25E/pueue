@@ -134,22 +134,33 @@ string with status faces."
 
 ;;;; PRINTERS
 
+(defun pueue--task-matches-group-filter-p (task)
+  "Return NIL if TASK doesn't match PUEUE--GROUP-FILTER."
+  (or (null pueue--group-filter)
+      (string= pueue--group-filter (map-elt task "group"))))
+
+(defun pueue--make-entry (task)
+  "Make tabulated-list entry from pueue TASK."
+  (list (map-elt task "id")
+        (seq-into (seq-map (pcase-lambda ((seq key fn))
+                             (funcall fn (map-elt task key)))
+                           [["id" number-to-string]
+                            ["status" pueue--format-status]
+                            ["start" pueue--extract-hm]
+                            ["end" pueue--extract-hm]
+                            ["group" identity]
+                            ["label" concat]
+                            ["command" identity]])
+                  'vector)))
+
 (defun pueue--refresh ()
   "Refresh pueue status."
   (setq pueue--status (pueue--status)
         pueue--marked-ids nil
         tabulated-list-entries
-        (seq-filter
-         (pcase-lambda ((seq _ (seq _ _ _ _ _ group)))
-           (or (null pueue--group-filter) (string= pueue--group-filter group)))
-         (map-apply
-          (pcase-lambda (id (map ("id" task-id) ("status" status)
-                                 ("start" start) ("end" end)
-                                 ("group" group) ("label" label) ("command" command)))
-            (list task-id (vector id (pueue--format-status status)
-                                  (pueue--extract-hm start) (pueue--extract-hm end)
-                                  group (or label "") command)))
-          (map-elt pueue--status "tasks")))))
+        (thread-last (map-values (map-elt pueue--status "tasks"))
+          (seq-filter #'pueue--task-matches-group-filter-p)
+          (seq-map #'pueue--make-entry))))
 
 (defun pueue--print-entry (id cols)
   "Function used in `tabulated-list-printer'.
