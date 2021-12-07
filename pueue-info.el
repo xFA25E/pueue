@@ -181,6 +181,15 @@ See `pueue-info--draw-envs' for more information on DRAW-ENVS-P."
       ["original_command" "Original command" pueue-info--draw-string]
       ["envs" "Environment variables" pueue-info--draw-envs]])))
 
+;;;; BINDINGS
+
+(easy-mmode-defmap pueue-info-mode-map
+  '(("n" . pueue-info-next-task)
+    ("p" . pueue-info-previous-task)
+    ("e" . pueue-info-toggle-envs)
+    ("l" . pueue-info-backward-history))
+  "Keymap for `pueue-info-mode'.")
+
 ;;;; COMMANDS
 
 (define-derived-mode pueue-info-mode special-mode "PueueInfo"
@@ -246,13 +255,6 @@ See `pueue-info--tasks' for more information on TASKS."
       (ewoc-filter pueue-info--ewoc #'ignore)
       (mapc (apply-partially #'ewoc-enter-last pueue-info--ewoc) (car item)))
     (goto-char (cdr item))))
-
-;;;; BINDINGS
-
-(define-key pueue-info-mode-map "n" #'pueue-info-next-task)
-(define-key pueue-info-mode-map "p" #'pueue-info-previous-task)
-(define-key pueue-info-mode-map "e" #'pueue-info-toggle-envs)
-(define-key pueue-info-mode-map "l" #'pueue-info-backward-history)
 
 ;;;; PROVIDE
 

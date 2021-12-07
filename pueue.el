@@ -157,6 +157,33 @@ See it's documentation for ID and COLS."
       (forward-line -1)
       (tabulated-list-put-tag "*"))))
 
+;;;; BINDINGS
+
+(easy-mmode-defmap pueue-mode-map
+  '(("m" . pueue-mark)
+    ("u" . pueue-unmark)
+    ("F" . pueue-filter-by-group)
+    ("a" . pueue-command-add)
+    ("c" . pueue-command-clean)
+    ("e" . pueue-command-edit)
+    ("Q" . pueue-command-enqueue)
+    ("f" . pueue-command-follow)
+    ("G" . pueue-command-group)
+    ("k" . pueue-command-kill)
+    ("l" . pueue-command-log)
+    ("L" . pueue-command-parallel)
+    ("P" . pueue-command-pause)
+    ("R" . pueue-command-remove)
+    ("t" . pueue-command-reset)
+    ("r" . pueue-command-restart)
+    ("d" . pueue-command-send)
+    ("s" . pueue-command-start)
+    ("H" . pueue-command-stash)
+    ("w" . pueue-command-switch)
+    ("?" . pueue-command-help)
+    ("\C-m" . pueue-info))
+  "Keymap for `pueue-mode'.")
+
 ;;;; COMMANDS
 
 (define-derived-mode pueue-mode tabulated-list-mode
@@ -209,33 +236,6 @@ See it's documentation for ID and COLS."
            (group (completing-read "Group: " groups nil t nil '_history)))
       (setq pueue--group-filter group)))
   (revert-buffer nil t))
-
-;;;; BINDINGS
-
-(define-key pueue-mode-map "m" #'pueue-mark)
-(define-key pueue-mode-map "u" #'pueue-unmark)
-(define-key pueue-mode-map "F" #'pueue-filter-by-group)
-
-(define-key pueue-mode-map "a" #'pueue-command-add)
-(define-key pueue-mode-map "c" #'pueue-command-clean)
-(define-key pueue-mode-map "e" #'pueue-command-edit)
-(define-key pueue-mode-map "Q" #'pueue-command-enqueue)
-(define-key pueue-mode-map "f" #'pueue-command-follow)
-(define-key pueue-mode-map "G" #'pueue-command-group)
-(define-key pueue-mode-map "k" #'pueue-command-kill)
-(define-key pueue-mode-map "l" #'pueue-command-log)
-(define-key pueue-mode-map "L" #'pueue-command-parallel)
-(define-key pueue-mode-map "P" #'pueue-command-pause)
-(define-key pueue-mode-map "R" #'pueue-command-remove)
-(define-key pueue-mode-map "t" #'pueue-command-reset)
-(define-key pueue-mode-map "r" #'pueue-command-restart)
-(define-key pueue-mode-map "d" #'pueue-command-send)
-(define-key pueue-mode-map "s" #'pueue-command-start)
-(define-key pueue-mode-map "H" #'pueue-command-stash)
-(define-key pueue-mode-map "w" #'pueue-command-switch)
-(define-key pueue-mode-map "?" #'pueue-command-help)
-
-(define-key pueue-mode-map "\C-m" #'pueue-info)
 
 ;;;; PROVIDE
 
