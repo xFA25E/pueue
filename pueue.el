@@ -47,7 +47,7 @@
 ;;;;; VARIABLES
 
 (defcustom pueue-buffer-name
-  "*Pueue"
+  "*Pueue*"
   "Default buffer name for Pueue mode."
   :type 'string
   :group 'pueue)
@@ -221,7 +221,7 @@ See it's documentation for ID and COLS."
 (defun pueue ()
   "Main entry command for pueue task manager."
   (interactive)
-  (let ((buffer (get-buffer-create "*Pueue*")))
+  (let ((buffer (get-buffer-create pueue-buffer-name)))
     (with-current-buffer buffer
       (pueue-mode)
       (pueue--refresh)
