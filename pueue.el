@@ -109,6 +109,10 @@ positions."
       (call-process "pueue" nil t nil "status" "--json"))
     (json-parse-buffer :null-object nil :false-object nil)))
 
+(defun pueue--push-button (_pos)
+  "Push tabulated-list BUTTON."
+  (call-interactively #'pueue-info))
+
 ;;;; FORMATTERS
 
 (defun pueue--extract-hm (time)
@@ -127,8 +131,8 @@ string with status faces."
     ((pred stringp) status)
     ((pred mapp)
      (pcase (seq-first (map-pairs status))
-       (`("Done" . "Success") (list "Done" 'face 'pueue-status-success))
-       (`("Done" . ,_) (list "Done" 'face 'pueue-status-error))
+       (`("Done" . "Success") '("Done" face pueue-status-success action pueue--push-button))
+       (`("Done" . ,_) '("Done" face pueue-status-error action pueue--push-button))
        (`(,status . ,_) status)))
     (_ "")))
 
