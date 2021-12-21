@@ -225,13 +225,11 @@ See it's documentation for ID and COLS."
 (defun pueue ()
   "Main entry command for pueue task manager."
   (interactive)
-  (let ((buffer (get-buffer-create pueue-buffer-name)))
-    (with-current-buffer buffer
-      (pueue-mode)
-      (pueue--refresh)
-      (tabulated-list-print))
-    (pop-to-buffer buffer '((display-buffer-reuse-window
-                             display-buffer-same-window)))))
+  (with-current-buffer (get-buffer-create pueue-buffer-name)
+    (pueue-mode)
+    (pueue--refresh)
+    (tabulated-list-print)
+    (pop-to-buffer (current-buffer))))
 
 (defun pueue-mark ()
   "Mark pueue task at point."

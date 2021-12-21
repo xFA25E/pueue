@@ -141,9 +141,11 @@ STATUS can be a string or a hash-table."
   "Push button on task dependency at position POS.
 This function is used as action in dependency buttons.  It
 records history to `pueue-info--history'."
-  (let ((data (ewoc-collect pueue-info--ewoc #'identity)))
-    (push (cons data (point)) pueue-info--history))
-  (pueue-info pueue-info--tasks (list (button-get (button-at pos) 'task-id))))
+  (let ((data (ewoc-collect pueue-info--ewoc #'identity))
+        (task-id (button-get (button-at pos) 'task-id)))
+    (push (cons data (point)) pueue-info--history)
+    (ewoc-filter pueue-info--ewoc #'ignore)
+    (ewoc-enter-last pueue-info--ewoc (cons task-id nil))))
 
 (defun pueue-info--draw-dependencies (dependencies &optional _)
   "Draw DEPENDENCIES.
@@ -210,7 +212,10 @@ See `pueue-info--draw-envs' for more information on DRAW-ENVS-P."
 
 (define-derived-mode pueue-info-mode special-mode "PueueInfo"
   "Mode used to draw details pueue tasks information."
-  :group 'pueue)
+  :group 'pueue
+  (buffer-disable-undo)
+  (with-silent-modifications (erase-buffer))
+  (setq pueue-info--ewoc (ewoc-create #'pueue-info--draw-task)))
 
 (defun pueue-info (tasks task-ids)
   "Main entry command to display details of pueue TASK-IDS.
@@ -226,23 +231,12 @@ See `pueue-info--tasks' for more information on TASKS."
        (user-error "Not in Pueue mode")
      (list (map-elt pueue--status "tasks") (pueue--marked-ids))))
 
-  (let ((prev-buffer (current-buffer))
-        (buffer (get-buffer pueue-info-buffer-name)))
-    (unless buffer
-      (with-current-buffer (setq buffer (get-buffer-create pueue-info-buffer-name))
-        (with-silent-modifications
-          (pueue-info-mode)
-          (setq pueue-info--ewoc (ewoc-create #'pueue-info--draw-task)))))
-    (with-current-buffer buffer
-      (setq pueue-info--tasks tasks)
-      (unless (eq prev-buffer buffer)
-        (setq pueue-info--history nil))
-      (with-silent-modifications
-        (ewoc-filter pueue-info--ewoc #'ignore)
-        (seq-doseq (task-id task-ids)
-          (ewoc-enter-last pueue-info--ewoc (cons task-id nil)))))
-    (pop-to-buffer buffer '((display-buffer-reuse-window
-                             display-buffer-same-window)))))
+  (with-current-buffer (get-buffer-create pueue-info-buffer-name)
+    (pueue-info-mode)
+    (setq pueue-info--tasks tasks)
+    (seq-doseq (task-id task-ids)
+      (ewoc-enter-last pueue-info--ewoc (cons task-id nil)))
+    (pop-to-buffer (current-buffer))))
 
 (defun pueue-info-next-task (n)
   "Go to next Nth task."
@@ -260,16 +254,14 @@ See `pueue-info--tasks' for more information on TASKS."
   (when-let ((node (ewoc-locate pueue-info--ewoc)))
     (let ((data (ewoc-data node)))
       (setcdr data (not (cdr data)))
-      (with-silent-modifications
-        (ewoc-invalidate pueue-info--ewoc node)))))
+      (ewoc-invalidate pueue-info--ewoc node))))
 
 (defun pueue-info-backward-history ()
   "Go back in history."
   (interactive)
   (when-let ((item (pop pueue-info--history)))
-    (with-silent-modifications
-      (ewoc-filter pueue-info--ewoc #'ignore)
-      (mapc (apply-partially #'ewoc-enter-last pueue-info--ewoc) (car item)))
+    (ewoc-filter pueue-info--ewoc #'ignore)
+    (mapc (apply-partially #'ewoc-enter-last pueue-info--ewoc) (car item))
     (goto-char (cdr item))))
 
 ;;;; PROVIDE
