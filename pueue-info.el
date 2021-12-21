@@ -91,6 +91,22 @@ Every history item has the following form:
 See `pueue-info--draw-envs' for more information on
 DRAW-ENVS-P.")
 
+;;;; UTILS
+
+(defun pueue-info--footer-p (node)
+  "Check whether NODE is ewoc footer."
+  (eq (ewoc--footer pueue-info--ewoc) node))
+
+(defun pueue-info--make-node-visible (node)
+  "Make ewoc NODE visible as much as possible."
+  (let* ((ewoc pueue-info--ewoc)
+         (next-node (or (ewoc-next ewoc node) (ewoc--footer ewoc)))
+         (next-node-location (ewoc-location next-node)))
+    (unless (pos-visible-in-window-p next-node-location)
+      (let ((node-line-number (line-number-at-pos (ewoc-location node)))
+            (next-node-line-number (line-number-at-pos next-node-location)))
+        (recenter (- (min (- next-node-line-number node-line-number) (window-height))))))))
+
 ;;;; DRAW FUNCTIONS
 
 (defun pueue-info--draw-number (number &optional _)
@@ -241,7 +257,9 @@ See `pueue-info--tasks' for more information on TASKS."
 (defun pueue-info-next-task (n)
   "Go to next Nth task."
   (interactive "p")
-  (ewoc-goto-next pueue-info--ewoc n))
+  (let ((node (ewoc-goto-next pueue-info--ewoc n)))
+    (unless (pueue-info--footer-p node)
+      (pueue-info--make-node-visible node))))
 
 (defun pueue-info-previous-task (n)
   "Go to previous Nth taks."
@@ -253,8 +271,9 @@ See `pueue-info--tasks' for more information on TASKS."
   (interactive)
   (when-let ((node (ewoc-locate pueue-info--ewoc)))
     (let ((data (ewoc-data node)))
-      (setcdr data (not (cdr data)))
-      (ewoc-invalidate pueue-info--ewoc node))))
+      (setcdr data (not (cdr data))))
+    (ewoc-invalidate pueue-info--ewoc node)
+    (pueue-info--make-node-visible node)))
 
 (defun pueue-info-backward-history ()
   "Go back in history."
