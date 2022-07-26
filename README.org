@@ -2,11 +2,16 @@
 
 Emacs interface for [[https://github.com/Nukesor/pueue][pueue]].
 
-[[scrots/pueue-tasks.png]]
-
-[[scrots/pueue-help.png]]
-
-[[scrots/pueue-info.png]]
+[[scrot.png]]
 
 All pueue commands are implemented.  Press ~?~ (/question mark/) or describe
 *pueue-mode* and *pueue-info-mode* to see them.
+
+*Note*: required version of /pueue/ is ~2.0.0~
+
+* Todo
+write tests
+learn eldev
+write tests with eldev
+add eldev to templates
+add CI

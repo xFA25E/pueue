@@ -1,4 +1,13 @@
 ; -*- mode: emacs-lisp; lexical-binding: t -*-
 
-;; Autodetermined by `eldev init'.
-(eldev-use-package-archive 'gnu)
+(eldev-use-package-archive 'gnu-devel)
+(eldev-use-package-archive 'nongnu-devel)
+(eldev-use-package-archive 'melpa-unstable)
+
+;; (eldev-use-local-dependency "~/barlib")
+
+;; Commands: build, emacs, eval, exec and test
+;; (eldev-add-extra-dependencies 'test 'foo-package)
+;; (eldev-add-extra-dependencies 'test '(:package helm :optional t))
+
+(eldev-use-plugin 'autoloads)
