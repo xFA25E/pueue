@@ -52,6 +52,10 @@
 
 ;; + You can customize settings in the `pueue' group.
 
+;; + Required version of pueue is 2.0.0.  Although the visualization of tasks
+;;   and detailed view will work with 1.0.0, some commands (like group) have
+;;   changed their API in 2.0.0.
+
 ;;;; Credits
 
 ;; This package would not have been possible without the excellent pueue[1] task
