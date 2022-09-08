@@ -72,8 +72,8 @@
 (require 'parse-time)
 (require 'rx)
 (require 'tabulated-list)
-(require' transient)
-(require' with-editor)
+(require 'transient)
+(require 'with-editor)
 
 (defvar crm-completion-table)
 
