@@ -36,7 +36,8 @@ It depends on the following packages:
 
 + with-editor
 
-Then put this file in your load-path, and put this in your init file:
+Then put /pueue.el/ file in your ~load-path~, and put the following in your init
+file:
 
 #+begin_src elisp
 (require 'pueue)
