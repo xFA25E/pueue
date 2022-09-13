@@ -27,8 +27,8 @@ nixpkgs overlays.
 
 ** Package manager
 
-If you've installed it with your package manager, then you are probably done.
-~pueue~ command is autoloaded, so you can call it right away.
+If you've installed it with your package manager, you're done.  ~pueue~ command
+is autoloaded, so you can call it right away.
 
 ** Manual
 
@@ -135,10 +135,7 @@ available keybindings.  Dired-like marking also works.
 
 - First working implementation with *bui*.
 
-* Development
-
-+ Write tests https://github.com/DarwinAwardWinner/with-simulated-input
-+ Add CI https://sachachua.com/blog/2022/01/coverage-reporting-in-emacs-with-buttercup-undercover-coverage-and-a-makefile/
+* COMMENT Development
 
 * License
 
