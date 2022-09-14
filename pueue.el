@@ -86,6 +86,11 @@
   :group 'processes
   :group 'applications)
 
+(defcustom pueue-command '("pueue")
+  "Pueue command."
+  :type '(repeat :tag "Command" (string :tag "Part"))
+  :group 'pueue)
+
 (defcustom pueue-buffer-name "*Pueue*"
   "Default buffer name for `pueue-mode'."
   :type 'string
@@ -345,7 +350,7 @@ IDS are strings."
 ID is a string."
   (interactive (cons (pueue--id-arg) (transient-args 'pueue-follow)))
   (let* ((buffer-name "*Pueue Follow*")
-         (parts `("pueue" "follow" ,@args ,id))
+         (parts `(,@pueue-command "follow" ,@args ,id))
          (command (mapconcat #'shell-quote-argument parts " ")))
     (when-let ((buffer (get-buffer buffer-name)))
       (kill-buffer buffer))
@@ -413,7 +418,7 @@ IDS are strings."
 IDS are strings."
   (interactive (cons (pueue--id-args) (transient-args 'pueue-log)))
   (let* ((buffer-name "*Pueue Log*")
-         (parts `("pueue" "log" ,@args ,@ids))
+         (parts `(,@pueue-command "log" ,@args ,@ids))
          (command (mapconcat #'shell-quote-argument parts " ")))
     (async-shell-command command buffer-name)))
 
@@ -600,7 +605,8 @@ ID-1 and ID-2 are strings."
   "Get parsed output of pueue status command."
   (with-temp-buffer
     (save-excursion
-      (call-process "pueue" nil t nil "status" "--json"))
+      (apply #'call-process (car pueue-command) nil t nil
+             `(,@(cdr pueue-command) "status" "--json")))
     (json-parse-buffer :null-object nil :false-object nil)))
 
 (defun pueue--id-at-point ()
@@ -672,7 +678,8 @@ If task with id ID does not exist, do nothing."
 ARGS is flattened with `flatten-tree'.  Show success or error
 message."
   (with-temp-buffer
-    (apply #'call-process "pueue" nil t nil (flatten-tree args))
+    (apply #'call-process (car pueue-command) nil t nil
+           (flatten-tree (cons (cdr pueue-command) args)))
     (message "%s" (string-trim-right (buffer-string))))
   (with-current-buffer pueue-buffer-name (revert-buffer nil t)))
 
@@ -682,7 +689,8 @@ ARGS is flattened with `flatten-tree'.  Async process will revert
 pueue buffer at the end.  Also, started `with-editor'."
   (cl-flet (( client-supports-editor-shell-command-p ()
               (with-temp-buffer
-                (call-process "pueue" nil t nil "--version")
+                (apply #'call-process (car pueue-command) nil t nil
+                       `(,@(cdr pueue-command) "--version"))
                 (goto-char (point-min))
                 (search-forward "Pueue client ")
                 (thread-last
@@ -703,7 +711,7 @@ pueue buffer at the end.  Also, started `with-editor'."
           (setenv "EMACS_SOCKET_NAME" socket-path)))
 
       (make-process :name "pueue" :buffer " *pueue-process*"
-                    :command (cons "pueue" (flatten-tree args))
+                    :command (flatten-tree (cons pueue-command args))
                     :sentinel #'sentinel))))
 
 ;;;;; Readers

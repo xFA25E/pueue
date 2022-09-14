@@ -58,6 +58,12 @@ available keybindings.  Dired-like marking also works.
 
 * Changelog
 
+** [2.1.0] - unreleased
+
+*** Added
+
+- Customizable ~pueue-command~
+
 ** [2.0.0] - 2022-09-08
 
 *** Added
