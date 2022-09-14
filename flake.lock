@@ -3,21 +3,66 @@
     "eldev": {
       "flake": false,
       "locked": {
-        "lastModified": 1660672003,
-        "narHash": "sha256-RD+7MCSdQ+fb2Lwe5ts+JcaCBfzbf8OT/9oK43MBsbY=",
+        "lastModified": 1662672849,
+        "narHash": "sha256-yna3SPVUb6Dzt0Wrl7EY05oNrGHSFVJL1QFhUKNb3DQ=",
         "owner": "doublep",
         "repo": "eldev",
-        "rev": "df63962605f06f9914b0d33c138000cb583f65c8",
+        "rev": "659f4d9c97a44cf29ded5594b3f5de8da99ec973",
         "type": "github"
       },
       "original": {
         "owner": "doublep",
-        "ref": "1.2",
+        "ref": "1.2.2",
         "repo": "eldev",
         "type": "github"
       }
     },
+    "emacs-overlay": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1663185189,
+        "narHash": "sha256-3Q21ejhrn2O+Kl0v4DhLhQtKf7OfrfOxIUZIlZ/UUSc=",
+        "owner": "nix-community",
+        "repo": "emacs-overlay",
+        "rev": "30a7c7ee7602234f7ae79d46239ae34d57ef0a60",
+        "type": "github"
+      },
+      "original": {
+        "id": "emacs-overlay",
+        "type": "indirect"
+      }
+    },
+    "flake-utils": {
+      "locked": {
+        "lastModified": 1659877975,
+        "narHash": "sha256-zllb8aq3YO3h8B/U0/J1WBgAL8EX5yWf5pMj3G0NAmc=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "c0e246b9b83f637f4681389ecabcb2681b4f3af0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
+      "locked": {
+        "lastModified": 0,
+        "narHash": "sha256-2f5NzHbi1NLSYnDg6cRu25B+XRxqngicvggg+0GgKHI=",
+        "path": "/nix/store/ps7746rfm0is1rl5mgsq6q3yd9c0qbfn-source",
+        "type": "path"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
+    "nixpkgs_2": {
       "locked": {
         "lastModified": 1658321858,
         "narHash": "sha256-2f5NzHbi1NLSYnDg6cRu25B+XRxqngicvggg+0GgKHI=",
@@ -33,7 +78,8 @@
     "root": {
       "inputs": {
         "eldev": "eldev",
-        "nixpkgs": "nixpkgs"
+        "emacs-overlay": "emacs-overlay",
+        "nixpkgs": "nixpkgs_2"
       }
     }
   },
