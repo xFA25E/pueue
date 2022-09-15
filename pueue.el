@@ -687,32 +687,38 @@ message."
   "Start pueue with ARGS.
 ARGS is flattened with `flatten-tree'.  Async process will revert
 pueue buffer at the end.  Also, started `with-editor'."
-  (cl-flet (( client-supports-editor-shell-command-p ()
-              (with-temp-buffer
-                (apply #'call-process (car pueue-command) nil t nil
-                       `(,@(cdr pueue-command) "--version"))
-                (goto-char (point-min))
-                (search-forward "Pueue client ")
-                (thread-last
-                  (buffer-substring-no-properties (point) (1- (point-max)))
-                  version-to-list
-                  (version-list-<= '(2 1 1)))))
+  (with-editor
+    ;; See https://github.com/Nukesor/pueue/issues/336
+    (unless (pueue--client-supports-editor-shell-command-p)
+      (setenv "EDITOR" with-editor-emacsclient-executable)
+      (let ((socket-path (expand-file-name server-name server-socket-dir)))
+        (setenv "EMACS_SOCKET_NAME" socket-path)))
 
-            ( sentinel (_process event)
-              (pcase event
-                ((or "finished\n" (rx bos "exited abnormally with code"))
-                 (with-current-buffer pueue-buffer-name
-                   (revert-buffer nil t))))))
-    (with-editor
-      ;; See https://github.com/Nukesor/pueue/issues/336
-      (unless (client-supports-editor-shell-command-p)
-        (setenv "EDITOR" with-editor-emacsclient-executable)
-        (let ((socket-path (expand-file-name server-name server-socket-dir)))
-          (setenv "EMACS_SOCKET_NAME" socket-path)))
+    (make-process :name "pueue" :buffer " *pueue-process*"
+                  :command (flatten-tree (cons pueue-command args))
+                  :sentinel #'pueue--sentinel)))
 
-      (make-process :name "pueue" :buffer " *pueue-process*"
-                    :command (flatten-tree (cons pueue-command args))
-                    :sentinel #'sentinel))))
+(defun pueue--client-supports-editor-shell-command-p ()
+  "Check if client supports $EDITOR as shell command."
+  (with-temp-buffer
+    (apply #'call-process (car pueue-command) nil t nil
+           `(,@(cdr pueue-command) "--version"))
+    (goto-char (point-min))
+    (search-forward "Pueue client ")
+    (thread-last
+      (buffer-substring-no-properties (point) (1- (point-max)))
+      version-to-list
+      (version-list-<= '(2 1 1)))))
+
+(defun pueue--sentinel (_process event)
+  "Pueue process sentinel.
+Reverts pueue buffer on success.
+
+For _PROCESS and EVENT, see info node `(elisp) Sentinels'."
+  (pcase event
+    ((or "finished\n" (rx bos "exited abnormally with code"))
+     (with-current-buffer pueue-buffer-name
+       (revert-buffer nil t)))))
 
 ;;;;; Readers
 
