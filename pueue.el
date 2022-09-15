@@ -363,7 +363,7 @@ ID is a string."
     transient-read-number-N+)]
   ["Actions" ("f" "Follow" pueue-follow-task)])
 
-;;;;;; GROUP
+;;;;;; Group
 
 (defun pueue-group-add (group &rest args)
   "Run pueue group add command with ARGS and GROUP."
@@ -411,7 +411,7 @@ IDS are strings."
     transient-read-number-N+)]
   ["Actions" ("k" "Kill" pueue-kill-tasks)])
 
-;;;;;; LOG
+;;;;;; Log
 
 (defun pueue-log-tasks (ids &rest args)
   "Run pueue log command with ARGS and IDS.
@@ -478,7 +478,7 @@ IDS are strigs"
   (interactive (list (pueue--id-args)))
   (pueue--call "remove" ids))
 
-;;;;; RESET
+;;;;;; Reset
 
 (defun pueue-reset-tasks (&rest args)
   "Run pueue reset command with ARGS."
@@ -492,7 +492,7 @@ IDS are strigs"
    ("-f" "Don't ask for any confirmation" "--force")]
   ["Actions" ("t" "Reset" pueue-reset-tasks)])
 
-;;;;; RESTART
+;;;;;; Restart
 
 (defun pueue-restart-tasks (ids &rest args)
   "Run pueue restart command with ARGS and IDS.
@@ -572,7 +572,7 @@ ID-1 and ID-2 are strings."
        (user-error "Need two marked tasks"))))
   (pueue--call "switch" id-1 id-2))
 
-;;;;; HELP
+;;;;;; Help
 
 (transient-define-prefix pueue-help ()
   "Show all pueue commmands."
