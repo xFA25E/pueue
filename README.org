@@ -1,5 +1,7 @@
 #+TITLE: pueue
 
+[[https://melpa.org/#/pueue][file:https://melpa.org/packages/pueue-badge.svg]] [[https://stable.melpa.org/#/pueue][file:https://stable.melpa.org/packages/pueue-badge.svg]]
+
 This package provides an intuitive GUI for [[https://github.com/Nukesor/pueue][pueue]] task manager.
 
 [[scrot.png]]
