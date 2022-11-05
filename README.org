@@ -60,11 +60,15 @@ available keybindings.  Dired-like marking also works.
 
 * Changelog
 
-** [2.1.0] - unreleased
+** [2.1.0] - 2022-11-05
 
 *** Added
 
 - Customizable ~pueue-command~
+
+*** Fixed
+
+- After ~pueue-remove~ marked tasks are correctly unmarked
 
 ** [2.0.0] - 2022-09-08
 

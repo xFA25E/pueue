@@ -4,7 +4,7 @@
 
 ;; Author: Valeriy Litkovskyy <vlr.ltkvsk@protonmail.com>
 ;; Keywords: processes
-;; Version: 2.0.0
+;; Version: 2.1.0
 ;; URL: https://github.com/xFA25E/pueue
 ;; Package-Requires: ((emacs "28.1") (with-editor "3.0.4"))
 
@@ -476,7 +476,8 @@ IDS are strings."
   "Run pueue remove command with IDS.
 IDS are strigs"
   (interactive (list (pueue--id-args)))
-  (pueue--call "remove" ids))
+  (when (zerop (pueue--call "remove" ids))
+    (pueue-unmark-all)))
 
 ;;;;;; Reset
 
@@ -678,10 +679,10 @@ If task with id ID does not exist, do nothing."
 ARGS is flattened with `flatten-tree'.  Show success or error
 message."
   (with-temp-buffer
-    (apply #'call-process (car pueue-command) nil t nil
-           (flatten-tree (cons (cdr pueue-command) args)))
-    (message "%s" (string-trim-right (buffer-string))))
-  (with-current-buffer pueue-buffer-name (revert-buffer nil t)))
+    (prog1 (apply #'call-process (car pueue-command) nil t nil
+                  (flatten-tree (cons (cdr pueue-command) args)))
+      (message "%s" (string-trim-right (buffer-string)))
+      (with-current-buffer pueue-buffer-name (revert-buffer nil t)))))
 
 (defun pueue--start (&rest args)
   "Start pueue with ARGS.
