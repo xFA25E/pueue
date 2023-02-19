@@ -1,0 +1,108 @@
+* Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [[https://keepachangelog.com/en/1.0.0/][Keep a Changelog]],
+and this project adheres to [[https://semver.org/spec/v2.0.0.html][Semantic Versioning]].
+
+** [2.1.1] - Unreleased
+
+*** Added
+
+*** Changed
+
+*** Deprecated
+
+*** Removed
+
+*** Fixed
+- ~pueue-group-remove~ command.
+
+*** Security
+
+** [2.1.0] - 2022-11-05
+
+*** Added
+
+- Customizable ~pueue-command~
+
+*** Fixed
+
+- After ~pueue-remove~ marked tasks are correctly unmarked
+
+** [2.0.0] - 2022-09-08
+
+*** Added
+
+- Support for *pueue 2.0.0*.
+- *pueue* edit commands are now launched with ~with-editor~ library.  User can
+  press ~C-x #~ to finish editing.
+
+*** Changed
+
+- Renamed all *pueue* commands (~pueue-command-<name> => pueue-<name>~).
+- Move everything to single file.
+- ~pueue--call~ arguments are now flattened with ~flatten-tree~.
+
+*** Removed
+
+- ~pueue-info-mode~ is no longer implemented with *ewoc* library.
+- Support for *pueue 1.0.0*.
+- Support for *GNU/Emacs 27.1*.  *28.1* is required now.
+
+** [1.0.4] - 2021-12-07
+
+*** Added
+
+- Group column.
+- Group filters.
+- Completion for some transient infixes.
+
+*** Changed
+
+- Make ~shell.nix~ more reproducible.
+- Use ~easy-mmode-defmap~ instead of ~define-key~.
+- Refactor ~pueue--refresh~.
+
+*** Fixed
+
+- Drawing of task status.
+
+** [1.0.3] - 2021-11-08
+
+*** Added
+
+- ~pueue-command-help~ transient command that displays all available commands.
+
+** [1.0.2] - 2021-11-04
+
+*** Changed
+
+- Refactor insertion and mark operations.
+
+** [1.0.1] - 2021-11-03
+
+*** Changed
+
+- *pueue* ~log~ command is now implemented with ~async-shell-command~.
+
+** [1.0.0] - 2021-11-03
+
+*** Added
+
+- Transient commands for every *pueue* subcommand.
+
+*** Changed
+
+- ~pueue-mode~ is now implemented with *tabulated-list* library.
+- ~pueue-info-mode~ is now implemented with *ewoc* library.
+
+*** Removed
+
+- *bui* is no longer used.
+
+** [0.1.0] - 2021-04-09
+
+*** Added
+
+- First working implementation with *bui*.

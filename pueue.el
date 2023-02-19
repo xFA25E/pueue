@@ -376,7 +376,7 @@ ID is a string."
 
 (defun pueue-group-remove (group)
   "Run pueue group remove command with GROUP."
-  (interactive (pueue--read-group "Remove group"))
+  (interactive (list (pueue--read-group "Remove group")))
   (pueue--call "group" "remove" group))
 
 (transient-define-prefix pueue-group ()
