@@ -196,25 +196,25 @@ history is reset.")
 
 (defun pueue-mark ()
   "Mark pueue task at point."
-  (interactive)
+  (interactive nil pueue-mode)
   (cl-pushnew (pueue--id-at-point) pueue-marked-ids :test #'=)
   (tabulated-list-put-tag "*" t))
 
 (defun pueue-unmark ()
   "Unmark pueue taks at point."
-  (interactive)
+  (interactive nil pueue-mode)
   (cl-callf2 cl-delete (pueue--id-at-point) pueue-marked-ids :test #'=)
   (tabulated-list-put-tag " " t))
 
 (defun pueue-unmark-all ()
   "Unmark all pueue tasks."
-  (interactive)
+  (interactive nil pueue-mode)
   (setq pueue-marked-ids nil)
   (tabulated-list-clear-all-tags))
 
 (defun pueue-toggle-marks ()
   "Toggle every mark in buffer."
-  (interactive)
+  (interactive nil pueue-mode)
   (save-excursion
     (goto-char (point-min))
     (while (not (eobp))
@@ -225,7 +225,7 @@ history is reset.")
 (defun pueue-info (id)
   "Main entry command to display details of pueue some task.
 ID is a number which corresponds to some pueue task id."
-  (interactive (list (pueue--id-at-point)))
+  (interactive (list (pueue--id-at-point)) pueue-mode)
   (with-current-buffer (get-buffer-create pueue-info-buffer-name)
     (pueue-info-mode)
     (pueue--draw-task id)
@@ -234,6 +234,7 @@ ID is a number which corresponds to some pueue task id."
 (define-derived-mode pueue-info-mode special-mode "PueueInfo"
   "Mode used to draw detailed pueue task information."
   :group 'pueue
+  :interactive nil
   (buffer-disable-undo)
   (cl-flet ((redraw (&rest _) (pueue--draw-task (pop pueue--info-history))))
     (setq-local revert-buffer-function #'redraw))
@@ -241,13 +242,14 @@ ID is a number which corresponds to some pueue task id."
 
 (defun pueue-info-backward-history ()
   "Go back in history."
-  (interactive)
+  (interactive nil pueue-info-mode)
   (when-let ((history (cdr pueue--info-history)))
     (setq pueue--info-history history)
     (pueue--draw-task (pop pueue--info-history))))
 
 ;;;;; Pueue
 
+(function-put 'pueue:--delay 'completion-predicate 'ignore)
 (transient-define-infix pueue:--delay ()
   "Number of seconds or a \"date expression\".
 
@@ -276,6 +278,7 @@ wednesday             // The closest wednesday in the future
 (defun pueue-add-command (command &rest args)
   "Add COMMAND to pueue.
 ARGS are arguments for pueue add command."
+  (declare (completion ignore))
   (interactive
    (let ((command (read-shell-command "Command: ")))
      (if (length> command 0)
@@ -304,6 +307,7 @@ ARGS are arguments for pueue add command."
 
 (defun pueue-clean-tasks (&rest args)
   "Run pueue clean command with ARGS."
+  (declare (completion ignore))
   (interactive (transient-args 'pueue-clean))
   (pueue--call "clean" args))
 
@@ -320,9 +324,11 @@ ARGS are arguments for pueue add command."
 (defun pueue-edit-task (id &rest args)
   "Run pueue edit command with ARGS and ID.
 ID is a string."
+  (declare (completion ignore))
   (interactive (cons (pueue--id-arg) (transient-args 'pueue-edit)))
   (pueue--start "edit" args id))
 
+(function-put 'pueue-edit 'command-modes '(pueue-mode))
 (transient-define-prefix pueue-edit ()
   "Run pueue edit command."
   ["Flags" ("-p" "Edit the path of the task" "--path")]
@@ -333,9 +339,11 @@ ID is a string."
 (defun pueue-enqueue-tasks (ids &rest args)
   "Run pueue enqueue command with ARGS and IDS.
 IDS are strings."
+  (declare (completion ignore))
   (interactive (cons (pueue--id-args) (transient-args 'pueue-enqueue)))
   (pueue--call "enqueue" args ids))
 
+(function-put 'pueue-enqueue 'command-modes '(pueue-mode))
 (transient-define-prefix pueue-enqueue ()
   "Run pueue enqueue command."
   ["Options"
@@ -348,6 +356,7 @@ IDS are strings."
 (defun pueue-follow-task (id &rest args)
   "Run pueue follow command with ARGS and ID.
 ID is a string."
+  (declare (completion ignore))
   (interactive (cons (pueue--id-arg) (transient-args 'pueue-follow)))
   (let* ((buffer-name "*Pueue Follow*")
          (parts `(,@pueue-command "follow" ,@args ,id))
@@ -356,6 +365,7 @@ ID is a string."
       (kill-buffer buffer))
     (async-shell-command command buffer-name)))
 
+(function-put 'pueue-follow 'command-modes '(pueue-mode))
 (transient-define-prefix pueue-follow ()
   "Run pueue follow command."
   ["Options"
@@ -367,6 +377,7 @@ ID is a string."
 
 (defun pueue-group-add (group &rest args)
   "Run pueue group add command with ARGS and GROUP."
+  (declare (completion ignore))
   (interactive (let ((group (read-string "Group name: ")))
                  (if (length> group 0)
                      (cons group (transient-args 'pueue-group))
@@ -376,6 +387,7 @@ ID is a string."
 
 (defun pueue-group-remove (group)
   "Run pueue group remove command with GROUP."
+  (declare (completion ignore))
   (interactive (list (pueue--read-group "Remove group")))
   (pueue--call "group" "remove" group))
 
@@ -392,6 +404,7 @@ ID is a string."
 (defun pueue-kill-tasks (ids &rest args)
   "Run pueue kill command with ARGS and IDS.
 IDS are strings."
+  (declare (completion ignore))
   (interactive
    (let ((args (transient-args 'pueue-kill)))
      (cons (pueue--id-args-unless '("--all" "--group=") args) args)))
@@ -416,12 +429,14 @@ IDS are strings."
 (defun pueue-log-tasks (ids &rest args)
   "Run pueue log command with ARGS and IDS.
 IDS are strings."
+  (declare (completion ignore))
   (interactive (cons (pueue--id-args) (transient-args 'pueue-log)))
   (let* ((buffer-name "*Pueue Log*")
          (parts `(,@pueue-command "log" ,@args ,@ids))
          (command (mapconcat #'shell-quote-argument parts " ")))
     (async-shell-command command buffer-name)))
 
+(function-put 'pueue-log 'command-modes '(pueue-mode))
 (transient-define-prefix pueue-log ()
   "Run pueue log command."
   :incompatible '(("--full" "--lines="))
@@ -435,6 +450,7 @@ IDS are strings."
 (defun pueue-parallel-tasks (count &rest args)
   "Run pueue parallel command with ARGS and COUNT.
 COUNT is a string."
+  (declare (completion ignore))
   (interactive
    (let ((count (transient-read-number-N+ "Parallel tasks: " nil nil)))
      (if (length> count 0)
@@ -454,6 +470,7 @@ COUNT is a string."
 (defun pueue-pause-tasks (ids &rest args)
   "Run pueue pause command with ARGS and IDS.
 IDS are strings."
+  (declare (completion ignore))
   (interactive
    (let ((args (transient-args 'pueue-pause)))
      (cons (pueue--id-args-unless '("--all" "--group=") args) args)))
@@ -475,7 +492,7 @@ IDS are strings."
 (defun pueue-remove (ids)
   "Run pueue remove command with IDS.
 IDS are strigs"
-  (interactive (list (pueue--id-args)))
+  (interactive (list (pueue--id-args)) pueue-mode)
   (when (zerop (pueue--call "remove" ids))
     (pueue-unmark-all)))
 
@@ -483,6 +500,7 @@ IDS are strigs"
 
 (defun pueue-reset-tasks (&rest args)
   "Run pueue reset command with ARGS."
+  (declare (completion ignore))
   (interactive (transient-args 'pueue-reset))
   (pueue--call "reset" args))
 
@@ -498,6 +516,7 @@ IDS are strigs"
 (defun pueue-restart-tasks (ids &rest args)
   "Run pueue restart command with ARGS and IDS.
 IDS are strings."
+  (declare (completion ignore))
   (interactive (let ((incompatible '("--all-failed" "--failed-in-group="))
                      (args (transient-args 'pueue-restart)))
                  (cons (pueue--id-args-unless incompatible args) args)))
@@ -505,7 +524,6 @@ IDS are strings."
           (transient-arg-value "--edit-path" args))
       (pueue--start "restart" args ids)
     (pueue--call "restart" args ids)))
-
 
 (transient-define-prefix pueue-restart ()
   "Run pueue restart command."
@@ -528,7 +546,7 @@ IDS are strings."
 (defun pueue-send (id input)
   "Run pueue send command with ID and INPUT.
 ID is a string."
-  (interactive (list (pueue--id-arg) (read-string "Input: ")))
+  (interactive (list (pueue--id-arg) (read-string "Input: ")) pueue-mode)
   (pueue--call "send" id input))
 
 ;;;;;; Start
@@ -536,6 +554,7 @@ ID is a string."
 (defun pueue-start-tasks (ids &rest args)
   "Run pueue start command with ARGS and IDS.
 IDS are strings."
+  (declare (completion ignore))
   (interactive
    (let ((args (transient-args 'pueue-start)))
      (cons (pueue--id-args-unless '("--all" "--group=") args) args)))
@@ -558,7 +577,7 @@ IDS are strings."
 (defun pueue-stash (ids)
   "Run pueue stash command with IDS.
 IDS are strings."
-  (interactive (list (pueue--id-args)))
+  (interactive (list (pueue--id-args)) pueue-mode)
   (pueue--call "stash" ids))
 
 ;;;;;; Switch
@@ -570,11 +589,13 @@ ID-1 and ID-2 are strings."
    (let ((ids (pueue--id-args)))
      (if (length= ids 2)
          ids
-       (user-error "Need two marked tasks"))))
+       (user-error "Need two marked tasks")))
+   pueue-mode)
   (pueue--call "switch" id-1 id-2))
 
 ;;;;;; Help
 
+(function-put 'pueue-help 'command-modes '(pueue-mode))
 (transient-define-prefix pueue-help ()
   "Show all pueue commmands."
   [["Task actions"
