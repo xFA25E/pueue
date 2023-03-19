@@ -1,6 +1,6 @@
 #+TITLE: pueue
 
-[[https://melpa.org/#/pueue][file:https://melpa.org/packages/pueue-badge.svg]] [[https://stable.melpa.org/#/pueue][file:https://stable.melpa.org/packages/pueue-badge.svg]]
+[[https://github.com/xFA25E/pueue/actions/workflows/test.yml/badge.svg]] [[https://melpa.org/#/pueue][file:https://melpa.org/packages/pueue-badge.svg]] [[https://stable.melpa.org/#/pueue][file:https://stable.melpa.org/packages/pueue-badge.svg]]
 
 This package provides an intuitive GUI for [[https://github.com/Nukesor/pueue][pueue]] task manager.
 
